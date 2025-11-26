@@ -1,57 +1,80 @@
 import jwt from "jsonwebtoken";
 import User from "../models/userModel.js";
-import Admin from "../models/adminModel.js";
+
+const ADMIN_JWT_SECRET = "superstrongadminsecretkey";
 
 export const protect = async (req, res, next) => {
   try {
     const authHeader = req.headers.authorization;
+
     if (!authHeader?.startsWith("Bearer ")) {
-      return res.status(401).json({ message: "No token provided" });
+      return res.status(401).json({ message: "AUTH ERROR: Token missing" });
     }
 
     const token = authHeader.split(" ")[1];
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+    let decoded;
+    try {
+      decoded = jwt.verify(token, process.env.JWT_SECRET);
+    } catch (err) {
+      return res.status(401).json({ message: "AUTH ERROR: Invalid or malformed user token" });
+    }
 
     const user = await User.findById(decoded.id).select("-password");
-    if (!user) return res.status(404).json({ message: "User not found" });
+
+    if (!user) {
+      return res.status(404).json({ message: "AUTH ERROR: User not found" });
+    }
 
     req.user = user;
     next();
   } catch (error) {
     console.error("User Auth Error:", error.message);
-    res.status(401).json({ message: "Invalid or expired token" });
+    res.status(500).json({ message: "AUTH ERROR: Internal server error" });
   }
 };
 
 export const protectUser = protect;
+
+
 export const protectAdmin = async (req, res, next) => {
   try {
     const authHeader = req.headers.authorization;
+
     if (!authHeader?.startsWith("Bearer ")) {
-      return res.status(401).json({ message: "No token provided" });
+      return res.status(401).json({ message: "ADMIN AUTH ERROR: Token missing" });
     }
 
     const token = authHeader.split(" ")[1];
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-    if (!decoded.isAdmin) {
-      return res.status(403).json({ message: "Access denied: Admin only" });
+    let decoded;
+    try {
+      decoded = jwt.verify(token, ADMIN_JWT_SECRET);
+    } catch (err) {
+      return res.status(401).json({ message: "ADMIN AUTH ERROR: Invalid or malformed admin token" });
     }
 
-    const admin = await Admin.findById(decoded.id).select("-password");
-    if (!admin) return res.status(404).json({ message: "Admin not found" });
+    if (!decoded.isAdmin) {
+      return res.status(403).json({ message: "ADMIN AUTH ERROR: Not an admin user" });
+    }
 
-    req.admin = admin;
+    req.admin = {
+      id: decoded.id,
+      email: decoded.email,
+      role: "admin",
+    };
+
     next();
   } catch (error) {
     console.error("Admin Auth Error:", error.message);
-    res.status(401).json({ message: "Invalid or expired admin token" });
+    res.status(500).json({ message: "ADMIN AUTH ERROR: Internal server error" });
   }
 };
 
+
 export const adminOnly = (req, res, next) => {
   if (!req.admin) {
-    return res.status(403).json({ message: "Admins only" });
+    return res.status(403).json({ message: "ADMIN AUTH ERROR: Access denied" });
   }
   next();
 };

@@ -1,193 +1,184 @@
 import Product from "../models/productModel.js";
+import Order from "../models/orderModel.js";
+import path from "path";
+import fs from "fs";
 
-const getImageUrl = (req, filename) =>
-  filename ? `${req.protocol}://${req.get("host")}/uploads/${filename}` : null;
+const BASE_URL = process.env.BASE_URL || "http://localhost:5000";
 
 export const createProduct = async (req, res) => {
   try {
-    const { name, price, category, description } = req.body;
+    const { name, description, price, category, stock } = req.body;
 
     const product = new Product({
       name,
+      description,
       price,
       category,
-      description,
-      image: req.file ? req.file.filename : null,
+      stock,
+      image: req.file ? req.file.filename : "",
     });
 
     await product.save();
-
     res.status(201).json({
-      success: true,
+      message: "Product created",
       product: {
-        ...product._doc,
-        imageUrl: getImageUrl(req, product.image),
+        ...product.toObject(),
+        imageUrl: product.image
+          ? `${BASE_URL}/uploads/${product.image}`
+          : null,
       },
     });
   } catch (error) {
-    console.error("Error creating product:", error);
-    res.status(500).json({ message: "Server Error" });
+    res.status(500).json({ message: "Server error", error: error.message });
   }
 };
+
 
 export const getProducts = async (req, res) => {
   try {
     const products = await Product.find().sort({ createdAt: -1 });
 
-    res.json(
-      products.map((p) => ({
-        ...p._doc,
-        imageUrl: getImageUrl(req, p.image),
-      }))
-    );
+    const formatted = products.map((p) => ({
+      ...p.toObject(),
+      imageUrl: p.image ? `${BASE_URL}/uploads/${p.image}` : null,
+    }));
+
+    res.json(formatted);
   } catch (error) {
-    console.error("Error fetching products:", error);
-    res.status(500).json({ message: "Server Error" });
+    res.status(500).json({ message: "Server error", error: error.message });
   }
 };
+
 
 export const getProductById = async (req, res) => {
   try {
     const product = await Product.findById(req.params.id);
-
     if (!product) return res.status(404).json({ message: "Product not found" });
 
     res.json({
-      ...product._doc,
-      imageUrl: getImageUrl(req, product.image),
+      ...product.toObject(),
+      imageUrl: product.image
+        ? `${BASE_URL}/uploads/${product.image}`
+        : null,
     });
   } catch (error) {
-    console.error("Error fetching product:", error);
-    res.status(500).json({ message: "Server Error" });
+    res.status(500).json({ message: "Server error", error: error.message });
   }
 };
 
 export const updateProduct = async (req, res) => {
   try {
-    const { name, price, category, description } = req.body;
+    const updates = req.body;
+    if (req.file) {
+      updates.image = req.file.filename;
+    }
 
-    let product = await Product.findById(req.params.id);
-    if (!product) return res.status(404).json({ message: "Product not found" });
+    const product = await Product.findByIdAndUpdate(req.params.id, updates, {
+      new: true,
+    });
 
-    
-    if (name) product.name = name;
-    if (price) product.price = price;
-    if (category) product.category = category;
-    if (description) product.description = description;
-
-    if (req.file) product.image = req.file.filename;
-
-    await product.save();
+    if (!product)
+      return res.status(404).json({ message: "Product not found" });
 
     res.json({
-      success: true,
-      message: "Product updated successfully",
+      message: "Updated",
       product: {
-        ...product._doc,
-        imageUrl: getImageUrl(req, product.image),
+        ...product.toObject(),
+        imageUrl: product.image
+          ? `${BASE_URL}/uploads/${product.image}`
+          : null,
       },
     });
   } catch (error) {
-    console.error("Error updating product:", error);
-    res.status(500).json({ message: "Server Error" });
+    res.status(500).json({ message: "Server error", error: error.message });
   }
 };
 
 export const deleteProduct = async (req, res) => {
   try {
-    const product = await Product.findById(req.params.id);
-    if (!product) return res.status(404).json({ message: "Product not found" });
+    const p = await Product.findById(req.params.id);
+    if (!p) return res.status(404).json({ message: "Product not found" });
+    if (p.image) {
+      const imgPath = path.join(process.cwd(), "uploads", p.image);
 
-    await product.deleteOne();
-    res.json({ success: true, message: "Product deleted successfully" });
+      if (fs.existsSync(imgPath)) fs.unlinkSync(imgPath);
+    }
+
+    await Product.findByIdAndDelete(req.params.id);
+
+    res.json({ message: "Product deleted" });
   } catch (error) {
-    console.error("Error deleting product:", error);
-    res.status(500).json({ message: "Server Error" });
+    res.status(500).json({ message: "Server error", error: error.message });
   }
 };
+
 
 export const addProductReview = async (req, res) => {
   try {
     const { rating, comment } = req.body;
-    const product = await Product.findById(req.params.id);
 
+    const product = await Product.findById(req.params.id);
     if (!product) return res.status(404).json({ message: "Product not found" });
 
-    
-    const alreadyReviewed = product.reviews.find(
-      (r) => r.userId.toString() === req.user._id.toString()
-    );
-
-    if (alreadyReviewed)
-      return res.status(400).json({ message: "You already reviewed this product" });
-
-    const review = {
+    product.reviews.push({
       userId: req.user._id,
       user: req.user.name,
-      rating: Number(rating),
+      rating,
       comment,
-      createdAt: new Date(),
-    };
+    });
 
-    product.reviews.push(review);
-    await product.save();
+    await product.updateRating();
 
-    res.status(201).json({ message: "Review added", review });
+    res.json({ message: "Review added", reviews: product.reviews });
   } catch (error) {
-    console.error("Error adding review:", error);
-    res.status(500).json({ message: "Server Error" });
+    res.status(500).json({ message: "Server error", error: error.message });
   }
 };
+
 
 export const updateProductReview = async (req, res) => {
   try {
-    const { id: productId, reviewId } = req.params;
-    const { rating, comment } = req.body;
-
-    const product = await Product.findById(productId);
+    const product = await Product.findById(req.params.id);
     if (!product) return res.status(404).json({ message: "Product not found" });
 
-    const review = product.reviews.id(reviewId);
+    const review = product.reviews.id(req.params.reviewId);
     if (!review) return res.status(404).json({ message: "Review not found" });
 
-    if (review.userId.toString() !== req.user._id.toString())
-      return res.status(403).json({ message: "Not authorized" });
+    review.rating = req.body.rating ?? review.rating;
+    review.comment = req.body.comment ?? review.comment;
 
-    review.rating = rating ?? review.rating;
-    review.comment = comment ?? review.comment;
-    review.createdAt = new Date();
+    await product.updateRating();
 
-    await product.save();
-
-    res.json({ message: "Review updated", review });
+    res.json({ message: "Review updated", reviews: product.reviews });
   } catch (error) {
-    console.error("Error updating review:", error);
-    res.status(500).json({ message: "Server Error" });
+    res.status(500).json({ message: "Server error", error: error.message });
   }
 };
 
+
 export const deleteProductReview = async (req, res) => {
   try {
-    const { id: productId, reviewId } = req.params;
-
-    const product = await Product.findById(productId);
+    const product = await Product.findById(req.params.id);
     if (!product) return res.status(404).json({ message: "Product not found" });
 
-    const review = product.reviews.id(reviewId);
+    const review = product.reviews.id(req.params.reviewId);
     if (!review) return res.status(404).json({ message: "Review not found" });
 
-    if (review.userId.toString() !== req.user._id.toString())
-      return res.status(403).json({ message: "Not authorized" });
+    review.deleteOne();
+    await product.updateRating();
 
-    product.reviews = product.reviews.filter(
-      (r) => r._id.toString() !== reviewId
-    );
-
-    await product.save();
-
-    res.json({ message: "Review deleted" });
+    res.json({ message: "Review deleted", reviews: product.reviews });
   } catch (error) {
-    console.error("Error deleting review:", error);
-    res.status(500).json({ message: "Server Error" });
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
+
+
+export const getCategories = async (req, res) => {
+  try {
+    const categories = await Product.distinct("category");
+    res.json(categories);
+  } catch (error) {
+    res.status(500).json({ message: "Server error", error: error.message });
   }
 };

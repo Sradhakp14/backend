@@ -8,8 +8,14 @@ const orderSchema = new mongoose.Schema(
       required: true,
     },
 
+    // Items in order
     orderItems: [
       {
+        product: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "Product",
+          required: true,
+        },
         name: { type: String, required: true },
         qty: { type: Number, required: true },
         price: { type: Number, required: true },
@@ -17,6 +23,7 @@ const orderSchema = new mongoose.Schema(
       },
     ],
 
+    // Address
     shippingAddress: {
       name: String,
       phone: String,
@@ -27,9 +34,9 @@ const orderSchema = new mongoose.Schema(
       pincode: String,
     },
 
+    // Payment
     paymentMethod: {
       type: String,
-      required: true,
       default: "Cash on Delivery",
     },
 
@@ -38,6 +45,7 @@ const orderSchema = new mongoose.Schema(
       required: true,
     },
 
+    // Order Status
     status: {
       type: String,
       enum: [
@@ -47,74 +55,33 @@ const orderSchema = new mongoose.Schema(
         "Out for Delivery",
         "Delivered",
         "Cancelled",
+        "Return Requested",
         "Returned",
       ],
       default: "Pending",
     },
 
-    estimatedDelivery: {
-      type: Date,
-      default: null,
-    },
+    estimatedDelivery: Date,
+    deliveredAt: Date,
 
-    cancelledAt: {
-      type: Date,
-      default: null,
-    },
-    cancelReason: {
-      type: String,
-      default: null,
-    },
+    // Cancel Order
+    cancelledAt: Date,
+    cancelReason: String,
 
-    deliveredAt: {
-      type: Date,
-      default: null,
-    },
+    // Return Flow
+    returnRequested: { type: Boolean, default: false },
+    returnReason: String,
+    returnRequestedAt: Date,
 
-    returnRequested: {
-      type: Boolean,
-      default: false,
-    },
-    returnReason: {
-      type: String,
-      default: null,
-    },
-    returnRequestedAt: {
-      type: Date,
-      default: null,
-    },
+    // ADMIN approves return
+    returnApproved: { type: Boolean, default: false },
+    returnApprovedAt: Date,
 
-    returnApproved: {
-      type: Boolean,
-      default: false,
-    },
-    returnApprovedAt: {
-      type: Date,
-      default: null,
-    },
+    // Refund info
+    refundInitiated: { type: Boolean, default: false },
+    refundMessage: String,
 
-    returnPickupDone: {
-      type: Boolean,
-      default: false,
-    },
-    returnPickupAt: {
-      type: Date,
-      default: null,
-    },
-
-    refundInitiated: {
-      type: Boolean,
-      default: false,
-    },
-    refundMessage: {
-      type: String,
-      default: null,
-    },
-
-    returnedAt: {
-      type: Date,
-      default: null,
-    },
+    returnedAt: Date,
   },
   { timestamps: true }
 );

@@ -7,9 +7,7 @@ const ADMIN_EMAIL = "admin@goldmart.com";
 const ADMIN_PASSWORD = "admin123";
 const ADMIN_JWT_SECRET = "superstrongadminsecretkey";
 
-// =====================================================
-// ADMIN LOGIN
-// =====================================================
+
 export const adminLogin = async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -28,9 +26,7 @@ export const adminLogin = async (req, res) => {
   }
 };
 
-// =====================================================
-// USERS
-// =====================================================
+
 export const getAllUsers = async (req, res) => {
   try {
     const users = await User.find().sort({ createdAt: -1 });
@@ -58,9 +54,7 @@ export const getUsersCount = async (req, res) => {
   }
 };
 
-// =====================================================
-// COUNTS
-// =====================================================
+
 export const getOrdersCount = async (req, res) => {
   try {
     const count = await Order.countDocuments();
@@ -79,9 +73,7 @@ export const getProductsCount = async (req, res) => {
   }
 };
 
-// =====================================================
-// REVENUE — DAILY
-// =====================================================
+
 export const getDailyRevenue = async (req, res) => {
   try {
     const { date } = req.query;
@@ -110,17 +102,15 @@ export const getDailyRevenue = async (req, res) => {
   }
 };
 
-// =====================================================
-// REVENUE — WEEKLY
-// =====================================================
+
 export const getWeeklyRevenue = async (req, res) => {
   try {
     const { date } = req.query;
     const target = new Date(date);
 
-    const day = target.getDay(); // 0 = Sunday
+    const day = target.getDay(); 
     const monday = new Date(target);
-    monday.setDate(target.getDate() - ((day + 6) % 7)); // convert Sunday system → Monday system
+    monday.setDate(target.getDate() - ((day + 6) % 7)); 
     monday.setHours(0, 0, 0, 0);
 
     const sunday = new Date(monday);
@@ -147,9 +137,6 @@ export const getWeeklyRevenue = async (req, res) => {
   }
 };
 
-// =====================================================
-// REVENUE — MONTHLY
-// =====================================================
 export const getMonthlyRevenue = async (req, res) => {
   try {
     const year = Number(req.query.year);
@@ -184,9 +171,7 @@ export const getMonthlyRevenue = async (req, res) => {
   }
 };
 
-// =====================================================
-// REVENUE — YEARLY
-// =====================================================
+
 export const getYearlyRevenue = async (req, res) => {
   try {
     const revenue = await Order.aggregate([
@@ -208,9 +193,7 @@ export const getYearlyRevenue = async (req, res) => {
   }
 };
 
-// =====================================================
-// REVENUE — CUSTOM RANGE
-// =====================================================
+
 export const getRangeRevenue = async (req, res) => {
   try {
     const { start, end } = req.query;
@@ -240,9 +223,7 @@ export const getRangeRevenue = async (req, res) => {
   }
 };
 
-// =====================================================
-// FIX MISSING deliveredAt
-// =====================================================
+
 export const fixDeliveredOrders = async (req, res) => {
   try {
     const updated = await Order.updateMany(

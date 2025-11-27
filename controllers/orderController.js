@@ -2,9 +2,7 @@ import Order from "../models/orderModel.js";
 import Product from "../models/productModel.js";
 import PDFDocument from "pdfkit";
 
-// =====================================================
-// CREATE ORDER
-// =====================================================
+
 export const createOrder = async (req, res) => {
   try {
     const { orderItems, shippingAddress, paymentMethod, totalPrice } = req.body;
@@ -33,9 +31,7 @@ export const createOrder = async (req, res) => {
   }
 };
 
-// =====================================================
-// GET ALL ORDERS (ADMIN)
-// =====================================================
+
 export const getOrders = async (req, res) => {
   try {
     const orders = await Order.find().populate("user", "name email");
@@ -45,9 +41,7 @@ export const getOrders = async (req, res) => {
   }
 };
 
-// =====================================================
-// GET ORDER BY ID
-// =====================================================
+
 export const getOrderById = async (req, res) => {
   try {
     const order = await Order.findById(req.params.id).populate(
@@ -63,9 +57,7 @@ export const getOrderById = async (req, res) => {
   }
 };
 
-// =====================================================
-// GET USER'S OWN ORDERS
-// =====================================================
+
 export const getMyOrders = async (req, res) => {
   try {
     const orders = await Order.find({ user: req.user._id });
@@ -75,9 +67,7 @@ export const getMyOrders = async (req, res) => {
   }
 };
 
-// =====================================================
-// USER CANCEL ORDER
-// =====================================================
+
 export const cancelOrder = async (req, res) => {
   try {
     const order = await Order.findById(req.params.id);
@@ -99,9 +89,7 @@ export const cancelOrder = async (req, res) => {
   }
 };
 
-// =====================================================
-// USER REQUEST RETURN
-// =====================================================
+
 export const requestReturn = async (req, res) => {
   try {
     const { reason } = req.body;
@@ -128,9 +116,7 @@ export const requestReturn = async (req, res) => {
   }
 };
 
-// =====================================================
-// ADMIN APPROVES RETURN
-// =====================================================
+
 export const approveReturn = async (req, res) => {
   try {
     const order = await Order.findById(req.params.id);
@@ -149,9 +135,7 @@ export const approveReturn = async (req, res) => {
   }
 };
 
-// =====================================================
-// ADMIN UPDATE ORDER STATUS
-// =====================================================
+
 export const updateOrderStatus = async (req, res) => {
   try {
     const { status } = req.body;
@@ -173,9 +157,7 @@ export const updateOrderStatus = async (req, res) => {
   }
 };
 
-// =====================================================
-// GENERATE INVOICE
-// =====================================================
+
 export const generateInvoice = async (req, res) => {
   try {
     const order = await Order.findById(req.params.id).populate("user");

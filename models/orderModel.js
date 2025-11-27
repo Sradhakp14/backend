@@ -8,7 +8,7 @@ const orderSchema = new mongoose.Schema(
       required: true,
     },
 
-    // Items in order
+    
     orderItems: [
       {
         product: {
@@ -23,7 +23,7 @@ const orderSchema = new mongoose.Schema(
       },
     ],
 
-    // Address
+    
     shippingAddress: {
       name: String,
       phone: String,
@@ -34,7 +34,7 @@ const orderSchema = new mongoose.Schema(
       pincode: String,
     },
 
-    // Payment
+    
     paymentMethod: {
       type: String,
       default: "Cash on Delivery",
@@ -45,7 +45,7 @@ const orderSchema = new mongoose.Schema(
       required: true,
     },
 
-    // Order Status
+  
     status: {
       type: String,
       enum: [
@@ -64,20 +64,20 @@ const orderSchema = new mongoose.Schema(
     estimatedDelivery: Date,
     deliveredAt: Date,
 
-    // Cancel Order
+    
     cancelledAt: Date,
     cancelReason: String,
 
-    // Return Flow
+    
     returnRequested: { type: Boolean, default: false },
     returnReason: String,
     returnRequestedAt: Date,
 
-    // ADMIN approves return
+    
     returnApproved: { type: Boolean, default: false },
     returnApprovedAt: Date,
 
-    // Refund info
+    
     refundInitiated: { type: Boolean, default: false },
     refundMessage: String,
 
